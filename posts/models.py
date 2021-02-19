@@ -1,34 +1,19 @@
 from django.contrib.auth.models import User
 from django.db import models
-# Create your models here.
-# from .backends.users.models import User
 
 
-class Category(models.Model):
-    CATEGORY = [
+class Post(models.Model):
+    CATEGORIES = [
         ('MED', 'Medical'),
         ('FIT', 'Fitness'),
-        ('FUT', 'Futball'),
+        ('FUT', 'Soccer'),
         ('HKY', 'Hockey'),
         ('BSK', 'Basketball'),
     ]
-    category=models.CharField(max_length=20, choices=CATEGORY, default='Medical')
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    category = models.CharField(max_length=20, choices=CATEGORIES, default='Medical')
 
-class PostType(models.Model):
-    TYPES = [
-        ('BLG', 'Blog'),
-        ('DRL', 'Drill'),
-        ('PRP', 'Practice Plan'),
-    ]
-    post_type=models.CharField(max_length=100, choices=TYPES, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-class SubCategory(models.Model):
-    category=models.ManyToManyField(Category, related_name="sub_categories")
     MED_SUB_CAT = [
+        ('ALL', 'All'),
         ('NUT', 'Nutrition'),
         ('CNC', 'Concussion'),
         ('IRH', 'Injury Rehabilitation'),
@@ -37,6 +22,7 @@ class SubCategory(models.Model):
         ('MTH', 'Mental Health'),
     ]
     FIT_SUB_CAT = [
+        ('ALL', 'All'),
         ('RVY', 'Recovery'),
         ('FLX', 'Flexibility'),
         ('MBT', 'Mobility'),
@@ -46,6 +32,7 @@ class SubCategory(models.Model):
         ('SPD', 'Speed'),
     ]
     FUT_SUB_CAT = [
+        ('ALL', 'All'),
         ('DRB', 'Dribbling'),
         ('SYS', 'Systems'),
         ('CON', 'Conditioning'),
@@ -57,6 +44,7 @@ class SubCategory(models.Model):
         ('GMP', 'Game Play'),
     ]
     HKY_SUB_CAT = [
+        ('ALL', 'All'),
         ('SYS', 'Systems'),
         ('PPL', 'Power Play'),
         ('PNK', 'Penalty Kill'),
@@ -73,6 +61,7 @@ class SubCategory(models.Model):
         ('OFI', 'Off Ice'),
     ]
     BSK_SUB_CAT = [
+        ('ALL', 'All'),
         ('DBL', 'Dribbling'),
         ('SHT', 'Shooting'),
         ('PSS', 'Passing'),
@@ -81,85 +70,41 @@ class SubCategory(models.Model):
         ('MOV', 'Movement'),
     ]
 
-    category_set=Category.category
-    if category_set == 'Medical':
-        sub_categories = models.CharField(max_length=50, choices=MED_SUB_CAT, default=MED_SUB_CAT)
-    if category_set == 'Fitness':
-        sub_categories = models.CharField(max_length=50, choices=FIT_SUB_CAT, default=MED_SUB_CAT)
-    if category_set == 'Futbal':
-        sub_categories = models.CharField(max_length=50, choices=FUT_SUB_CAT, default=MED_SUB_CAT)
-    if category_set == 'Hockey':
-        sub_categories = models.CharField(max_length=50, choices=HKY_SUB_CAT, default=MED_SUB_CAT)
-    if category_set == 'Basketball':
-        sub_categories = models.CharField(max_length=50, choices=BSK_SUB_CAT, default=MED_SUB_CAT)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-# ====== POST CLASSES ==========
-
-class Drill(models.Model):
-    # MED_TOOLS = [
-    # ]
-
-    # FIT_TOOLS = [
-    # ]
-
-    FUT_TOOLS = [
-        ('ball', 'images/futball.jpeg'),
-        ('cone', 'images/cone.jpeg'),
-        ('attack', 'images/attack.jpeg'),
-        ('midfiler', 'images/midfielder.jpeg'),
-        ('defender', 'images/defender.jpeg'),
-        ('goalkeeper', 'images/goalkeper.jpeg'),
-        ('sweeper', 'images/sweeper.jpeg'),
-        ('x', 'images/x.jpeg'),
-        ('o', 'images/o.jpeg'),
-    ]
-    HKY_TOOLS = [
-        ('puck', 'images/puck.jpeg'),
-        ('cone', 'images/cone.jpeg'),
-        ('pad', 'images/pad.jpeg'),
-        ('attk_tri', 'images/attacktriangle.jpeg'),
-        ('forward', 'images/forward.jpeg'),
-        ('defender', 'images/defender.jpeg'),
-        ('goalkeeper', 'images/goalkeper.jpeg'),
-        ('x', 'images/x.jpeg'),
-        ('o', 'images/o.jpeg'),
-    ]
-    category=Category.category
+    sub_cats = MED_SUB_CAT
     if category == 'Medical':
-        whiteboard_background_image='images/blank_board.jpeg'
+        # sub_categories = models.CharField(max_length=50, choices=MED_SUB_CAT, default="All")
+        sub_cats = MED_SUB_CAT
     if category == 'Fitness':
-        whiteboard_background_image='images/blank_board.jpeg'
-    if category == 'Futball':
-        whiteboard_background_image='images/soccer_field.jpeg'
-        tools=FUT_TOOLS[1]
+        # sub_categories = models.CharField(max_length=50, choices=FIT_SUB_CAT)
+        sub_cats = FIT_SUB_CAT
+    if category == 'Soccer':
+        # sub_categories = models.CharField(max_length=50, choices=FUT_SUB_CAT)
+        sub_cats = FUT_SUB_CAT
     if category == 'Hockey':
-        whiteboard_background_image='images/hockey_board,jpeg'
-        tools=HKY_TOOLS[1]
-    sub_categories_defined=models.ManyToManyField(SubCategory, related_name="drill")
+        # sub_categories = models.CharField(max_length=50, choices=HKY_SUB_CAT)
+        sub_cats = HKY_SUB_CAT
+    if category == 'Basketball':
+        # sub_categories = models.CharField(max_length=50, choices=BSK_SUB_CAT)
+        sub_cats = BSK_SUB_CAT
+
+    sub_categories = models.CharField(max_length=50, choices=sub_cats, default="All")
+    title = models.CharField(max_length=100)
+    description = models.TextField()
+    user = models.ForeignKey(User, related_name="post", on_delete=models.CASCADE, default="")
+    image = models.ImageField(upload_to="images/post/<post_type>/<category>/", null=True)
+    # files = models.FileField()
+
+    TYPES = [
+        ('BLG', 'Blog'),
+        ('DRL', 'Drill'),
+        ('PRP', 'Practice Plan'),
+    ]
+    post_type = models.CharField(max_length=100, choices=TYPES, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-class PracticePlan(models.Model):
-    category = Category.category
-    drill=models.ManyToManyField(Drill, related_name='practice_plan')
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    class Meta:
+        ordering = ('post_type', 'category', 'sub_categories', 'title', 'description', 'user', 'image', 'created_at')
 
-class Post(models.Model):
-    category=models.ForeignKey(Category, related_name='post', on_delete=models.CASCADE)
-    sub_categories=models.ManyToManyField(SubCategory, related_name="post")
-    title=models.CharField(max_length=100)
-    description=models.CharField(max_length=100)
-    user=models.ForeignKey(User, related_name="post", on_delete=models.CASCADE)
-    image=models.ImageField(upload_to="images/post/<category>/", null=True)
-    # files=models.FileField()
-    post_type=models.ForeignKey(PostType, related_name='post', on_delete=models.CASCADE)
-    if post_type == 'Drill':
-        post_type = models.ForeignKey(Drill, related_name='post', on_delete=models.CASCADE)
-    if post_type == 'Practice Plan':
-        post_type = PracticePlan()
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
+    def __str__(self):
+        return self.title
