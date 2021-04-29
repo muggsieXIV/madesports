@@ -1,10 +1,22 @@
-from djoser.serializers import UserCreateSerializer
-from django.contrib.auth import get_user_model
-User = get_user_model()
+from rest_framework import serializers
+from .models import User, Athlete, Family
 
-class UserCreateSerializer(UserCreateSerializer):
-    class Meta(UserCreateSerializer.Meta):
+
+#  users serializers for User, Athlete, Family
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
         model = User
-        fields = ('id', 'first_name', 'last_name', 'email', 'password')
+        fields = '__all__'
 
+
+class AthleteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Athlete
+        fields = '__all__'
+
+
+class FamilySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Family
+        fields = '__all__'
 

@@ -1,57 +1,54 @@
 from django.db import models
-from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
-
-# Create your models here.
+import re
 
 
 # Create your models here.
 # ***** USER VALIDATING ******
-class UserManager(BaseUserManager):
-    def create_user(self, first_name, last_name, email, password=None):
-        if not email:
-            raise ValueError('Users must have an email address')
-        email = self.normalize_email(email)
-        user = self.model(first_name=first_name, last_name=last_name)
-        user.set_password(password)
-        user.save()
+class UserManager(models.Manager):
+    def user_validator(self, form_data):
+        errors = {}
+        EMAIL_REGEX = EMAIL_REGEX = re.compile(r'^[a-zA-Z0-9.+_-]+@[a-zA-Z0-9._-]+\.[a-zA-Z]+$')
+        if len(form_data['first_name']) < 2:
+            errors['first_name'] = "First Name is not long enough. Try again!"
+        if len(form_data['last_name']) < 2:
+            errors['last_name'] = "Last Name is not long enough. Try again!"
+        if not EMAIL_REGEX.match(form_data['email']):
+            errors['email'] = "Email doesn't look right, try again!"
+        if len(form_data['password']) < 8:
+            errors['password'] = "Password is not long enough, try again!"
+        if form_data['password'] != form_data['confirm_password']:
+            errors['confirm_password'] = "Passwords don't match! Try again!"
+        return errors
 
-        return user
-
-    def create_superuser(self, first_name, last_name, email, password=None):
-        if not email:
-            raise ValueError('Superusers must have an email address')
-        email = self.normalize_email(email)
-        user = self.model(email=email, first_name=first_name, last_name=last_name)
-        user.set_password(password)
-        user.save()
-
-        return user
+    def login_validator(self, form_data):
+        errors = {}
+        EMAIL_REGEX = re.compile(r'^[a-zA-Z0-9.+_-]+@[a-zA-Z0-9._-]+\.[a-zA-Z]+$')
+        if not EMAIL_REGEX.match(form_data['email']):
+            errors['email_format'] = "Email Doesn't look right!"
+        if form_data['email'] != User.email:
+            errors['email_not_found'] = "Email not found, try again!"
+        return errors
 
 # ==== USER CLASS ====
-class User(AbstractBaseUser, PermissionsMixin):
+class User(models.Model):
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
+    username = models.CharField(max_length=100, unique=True, null=True)
     email = models.EmailField(unique=True)
-    phone = models.IntegerField()
+    phone = models.IntegerField(null=True)
     image = models.ImageField(upload_to='static/images/user_profile_pictures/', null=True)
-    date_of_birth = models.DateField()
     password = models.CharField(max_length=100)
     objects = UserManager()
-    # saved_posts=models.ManyToManyField(Post, related_name="user")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['first_name', 'last_name']
+    # USER is a PARENT of [ Family -> Athlete, Organization -> Team, Company ]
 
-    def get_first_name(self):
-        return self.first_name
-
-    def get_last_name(self):
-        return self.last_name
+    class Meta:
+        ordering = ('first_name', 'last_name', 'email', 'phone', 'image', 'password')
 
     def __str__(self):
-        return self.email
+        return self.username
 
 
 # **** ATHLETE VALIDATING ****
@@ -67,7 +64,7 @@ class AthleteManager(models.Manager):
             errors['username'] = "Username must be at least 8 characters. Try again!"
         if len(form_data['password']) < 8:
             errors['password'] = "Password is not long enough, try again!"
-        if form_data['password'] != form_data['confirm_password']:
+        if form_data['confirm_password'] != form_data['password']:
             errors['confirm_password'] = "Passwords don't match! Try again!"
         return errors 
 
@@ -86,16 +83,23 @@ class Athlete(models.Model):
     last_name = models.CharField(max_length=100)
     username = models.CharField(max_length=100)
     password = models.CharField(max_length=100)
-    # teams=models.ManyToManyField(Team, related_name="athlete")
     date_of_birth = models.DateField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    # ===== TO DO =========
+    # Add image field
+    # Make a foriegn key for athlete to family... May need to dropDB to do this... maybe wait until
+    # postresql migration
+
+    # Athlete is connected by a team. An Athlete cannot connect
+    # themself to a team/camp/org, admins must request to add them.
 
     class Meta:
         ordering = ("created_at",  "updated_at", "first_name", "last_name", "username", "password", "date_of_birth")
 
     def __str__(self):
-        return f"{self.first_name}, {self.last_name}, {self.username}, {self.password}, {self.created_at}, {self.updated_at}, {self.date_of_birth}"
+        return self.username
 
 
 # **** FAMILY VALIDATING ****
@@ -132,12 +136,19 @@ class Family(models.Model):
         ordering = ("name", "username", "password")
 
     def __str__(self):
-        return f"{self.name}, {self.username}, {self.password}"
+        return self.username
 
 
-# ==== RELATIVE CLASS ====
+# # ==== RELATIVE CLASS ====
 # class Relative(models.Model):
-#     user=models.ManyToManyField(User, related_name="relative")
-#     relation=models.CharField(max_length=100)
+#     user = models.ForeignKey(User, related_name="relative")
+#     relation = models.CharField(max_length=100)
+#     family = models.ManyToManyField(Family, related_name="relative")
 #     created_at = models.DateTimeField(auto_now_add=True)
 #     updated_at = models.DateTimeField(auto_now=True)
+#
+#     # Relatives have (( READ_ONLY )) access to family accounts.
+#     # Relatives permissions set_by(PARENTS.settings)
+#
+#     def __str__(self) -> User:
+#         return self.user
